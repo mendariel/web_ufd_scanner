@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Extractions Scanner</title>
+    <!--
+    UFD/ZIP Scanner Web Application
+    Version 1.3 - Performance & Memory Optimized
+    
+    CHANGELOG:
+    - v1.3: Fixed major performance and memory issues
+      * Uses modern File System Access API (Chrome/Edge)
+      * No files loaded during folder selection
+      * Memory-efficient scanning
+      * Only processes relevant file types during scan
+      * Added README button and improved documentation
+    -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .header-buttons {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .dark-mode-toggle {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .dark-mode-toggle:hover {
+            background: #2d3748;
+            transform: translateY(-2px);
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+        
+        .control-panel, .results-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+        
+        .scan-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .scan-overlay-content {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .scan-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #e2e8f0;
+            border-top: 6px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .scan-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+        
+        .scan-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .scan-stat {
+            background: #f7fafc;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .scan-stat-label {
+            font-size: 0.9em;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+        
+        .scan-stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .progress-bar-live {
+            background: #e2e8f0;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .progress-fill-live {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .status-message {
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .log-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-info { color: #63b3ed; }
+        .log-match { color: #68d391; }
+        .log-error { color: #fc8181; }
+        
+        /* Dark mode styles */
+        .dark-mode {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+        }
+        
+        .dark-mode .header,
+        .dark-mode .control-panel,
+        .dark-mode .results-panel {
+            background: rgba(45, 55, 72, 0.95);
+            color: #e2e8f0;
+        }
+        
+        .dark-mode h1,
+        .dark-mode .section-title {
+            color: #e2e8f0;
+        }
+        
+        .dark-mode label {
+            color: #a0aec0;
+        }
+        
+        .dark-mode input,
+        .dark-mode select {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header-buttons {
+                position: static;
+                justify-content: center;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Scan Overlay -->
+    <div id="scanOverlay" class="scan-overlay">
+        <div class="scan-overlay-content">
+            <div class="scan-spinner"></div>
+            <div class="scan-title">🔍 Scanning Files</div>
+            
+            <div class="scan-stats">
+                <div class="scan-stat">
+                    <div class="scan-stat-label">Files Processed</div>
+                    <div class="scan-stat-value" id="filesProcessedCount">0</div>
+                </div>
+                <div class="scan-stat">
+                    <div class="scan-stat-label">Matches Found</div>
+                    <div class="scan-stat-value" id="matchesCount">0</div>
+                </div>
+                <div class="scan-stat">
+                    <div class="scan-stat-label">Current File</div>
+                    <div class="scan-stat-value" id="currentFileName">Initializing...</div>
+                </div>
+                <div class="scan-stat">
+                    <div class="scan-stat-label">ETA</div>
+                    <div class="scan-stat-value" id="etaTime">Calculating...</div>
+                </div>
+            </div>
+            
+            <div class="progress-bar-live">
+                <div class="progress-fill-live" id="progressFillLive"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-buttons">
+                <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+                <button class="dark-mode-toggle" onclick="showReadme()">📖 README</button>
+            </div>
+            <h1>🔍 Extractions Scanner</h1>
+            <p>Memory-efficient scanning for UFD and ZIP files</p>
+            <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">Version 1.3 - Performance Optimized</div>
+        </div>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <h2 class="section-title">📁 Scan Configuration</h2>
+                
+                <div class="form-group">
+                    <label>📁 Folder Selection:</label>
+                    <button type="button" id="browseFolderBtn" class="btn" style="flex: 1;">
+                        📂 Choose Folder
+                    </button>
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 10px;">
+                        💡 Automatically switches between Modern and Legacy modes based on folder type
+                    </div>
+                    <div id="selectedFolder" class="status-message" style="display: none;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fileTypeSelect">📄 File Type:</label>
+                    <select id="fileTypeSelect">
+                        <option value="">Select file type...</option>
+                        <option value="UFD">UFD Files (.ufd)</option>
+                        <option value="ZIP">ZIP Files (.zip)</option>
+                    </select>
+                </div>
+                
+                <!-- UFD-specific controls -->
+                <div id="ufdControls" style="display: none;">
+                    <div class="form-group">
+                        <label for="statusSelect">Extraction Status:</label>
+                        <select id="statusSelect">
+                            <option value="*.*">*.*</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="typeSelect">Type:</label>
+                        <select id="typeSelect">
+                            <option value="*.*">*.*</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="buildInput">Build Filter (wildcards supported):</label>
+                        <input type="text" id="buildInput" placeholder="e.g., 2024.* or *debug*">
+                    </div>
+                </div>
+                
+                <!-- ZIP-specific controls -->
+                <div id="zipControls" style="display: none;">
+                    <div class="form-group">
+                        <label for="fileSizeUnitSelect">File Size Unit:</label>
+                        <select id="fileSizeUnitSelect">
+                            <option value="KB">KB</option>
+                            <option value="MB">MB</option>
+                            <option value="GB">GB</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sizeThresholdSelect">Files Larger Than:</label>
+                        <select id="sizeThresholdSelect">
+                            <option value="1">1</option>
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                            <option value="1000">1000</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <input type="checkbox" id="debugMode">
+                        <label for="debugMode" style="margin: 0;">Enable Debug Mode</label>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <button id="scanBtn" class="btn" disabled>🚀 Start Scan</button>
+                </div>
+            </div>
+            
+            <div class="results-panel">
+                <h2 class="section-title">📊 Scan Results</h2>
+                
+                <div class="log-container" id="resultsLog">
+                    <!-- Log entries will be added here dynamically -->
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button id="downloadBtn" class="btn" disabled>💾 Download Results</button>
+                </div>
+
+                <h2 class="section-title" style="margin-top: 25px;">🧪 App Log (Debug)</h2>
+                <div class="log-container" id="appLog" style="height: 200px;"></div>
+                <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="copyAppLogBtn" class="btn">📋 Copy App Log</button>
+                    <button id="downloadAppLogBtn" class="btn">⬇️ Download App Log</button>
+                    <button id="clearAppLogBtn" class="btn btn-stop">🧹 Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleDarkMode() {
+            const body = document.body;
+            const toggle = document.querySelector('.dark-mode-toggle');
+            
+            body.classList.toggle('dark-mode');
+            
+            if (body.classList.contains('dark-mode')) {
+                toggle.textContent = '☀️ Light Mode';
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                toggle.textContent = '🌙 Dark Mode';
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+        
+        function showReadme() {
+            const readmeContent = `📖 Extractions Scanner README
+
+🎯 PURPOSE:
+Memory-efficient web app for scanning UFD and ZIP files with specific criteria.
+
+⚡ KEY IMPROVEMENTS IN v1.3:
+• NO MORE "uploading files" browser message
+• Memory efficient - only processes files during scan
+• Uses modern File System Access API (Chrome/Edge)
+• Filters files by type BEFORE processing
+
+🚀 HOW TO USE:
+1. Click "Browse Folder" to select directory
+2. Choose file type (UFD or ZIP)
+3. Set filters if needed
+4. Click "Start Scan"
+
+⚠️ PERFORMANCE NOTES:
+• Chrome/Edge: Uses modern API, no memory issues
+• Firefox/Safari: Falls back to legacy method
+• Only scans relevant file types (UFD or ZIP)
+• No files loaded until you click "Start Scan"
+
+🔧 MEMORY OPTIMIZATIONS:
+• Folder selection only gets directory handle
+• File enumeration happens during scan only
+• Processes files one at a time
+• Automatic cleanup after each file
+
+📝 VERSION: 1.3 - Performance & Memory Optimized`;
+            
+            alert(readmeContent);
+        }
+        
+        // Load saved dark mode preference
+        function loadDarkModePreference() {
+            document.body.classList.add('dark-mode');
+            const toggle = document.querySelector('.dark-mode-toggle');
+            toggle.textContent = '☀️ Light Mode';
+            localStorage.setItem('darkMode', 'enabled');
+        }
+        
+        class UFDScanner {
+            constructor() {
+                this.directoryHandle = null;
+                this.legacyFileList = null;
+                this.isScanning = false;
+                this.shouldStop = false;
+                this.results = [];
+                this.isLegacyPickerOpen = false; // prevent double legacy pickers
+                
+                // Configuration similar to original Python app
+                this.config = {
+                    extraction_status: ['*.*', 'successful', 'fail'],
+                    type: ['*.*', 'file system', 'extraction app selective', 'triage', 'logical extraction', 'physical extraction']
+                };
+                
+                this.elements = {
+                    browseFolderBtn: document.getElementById('browseFolderBtn'),
+                    legacyFolderBtn: document.getElementById('legacyFolderBtn'),
+                    selectedFolder: document.getElementById('selectedFolder'),
+                    fileTypeSelect: document.getElementById('fileTypeSelect'),
+                    ufdControls: document.getElementById('ufdControls'),
+                    zipControls: document.getElementById('zipControls'),
+                    statusSelect: document.getElementById('statusSelect'),
+                    typeSelect: document.getElementById('typeSelect'),
+                    buildInput: document.getElementById('buildInput'),
+                    fileSizeUnitSelect: document.getElementById('fileSizeUnitSelect'),
+                    sizeThresholdSelect: document.getElementById('sizeThresholdSelect'),
+                    debugMode: document.getElementById('debugMode'),
+                    scanBtn: document.getElementById('scanBtn'),
+                    resultsLog: document.getElementById('resultsLog'),
+                    downloadBtn: document.getElementById('downloadBtn'),
+                    scanOverlay: document.getElementById('scanOverlay'),
+                    filesProcessedCount: document.getElementById('filesProcessedCount'),
+                    matchesCount: document.getElementById('matchesCount'),
+                    currentFileName: document.getElementById('currentFileName'),
+                    etaTime: document.getElementById('etaTime'),
+                    progressFillLive: document.getElementById('progressFillLive'),
+                    // App log elements
+                    appLog: document.getElementById('appLog'),
+                    copyAppLogBtn: document.getElementById('copyAppLogBtn'),
+                    downloadAppLogBtn: document.getElementById('downloadAppLogBtn'),
+                    clearAppLogBtn: document.getElementById('clearAppLogBtn')
+                };
+
+                // App log storage
+                this.appLogEntries = [];
+                this.maxAppLogEntries = 500;
+                
+                this.populateDropdowns();
+                this.initializeEventListeners();
+                this.addLogEntry('🚀 Extractions Scanner v1.3 ready - all features restored!', 'info');
+                this.addLogEntry('💡 Choose Modern mode for fast scanning or Legacy mode for root drives (C:, D:)', 'info');
+                // Environment snapshot to app log
+                this.logEnvironmentSnapshot();
+            }
+            
+            populateDropdowns() {
+                // Populate Status dropdown
+                this.elements.statusSelect.innerHTML = '';
+                this.config.extraction_status.forEach(status => {
+                    const option = document.createElement('option');
+                    option.value = status;
+                    option.textContent = status;
+                    this.elements.statusSelect.appendChild(option);
+                });
+                
+                // Populate Type dropdown
+                this.elements.typeSelect.innerHTML = '';
+                this.config.type.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    this.elements.typeSelect.appendChild(option);
+                });
+            }
+            
+            initializeEventListeners() {
+                this.elements.browseFolderBtn.addEventListener('click', () => this.openFolderBrowser());
+                this.elements.fileTypeSelect.addEventListener('change', () => {
+                    this.addAppLog('info', 'File type changed', { value: this.elements.fileTypeSelect.value });
+                    this.handleFileTypeChange();
+                });
+                this.elements.scanBtn.addEventListener('click', () => {
+                    if (this.isScanning) {
+                        this.stopScan();
+                    } else {
+                        this.startScan();
+                    }
+                });
+                this.elements.downloadBtn.addEventListener('click', () => {
+                    this.addAppLog('info', 'Download results clicked', { results: this.results.length });
+                    this.downloadResults();
+                });
+                // App log controls
+                this.elements.copyAppLogBtn.addEventListener('click', () => this.copyAppLog());
+                this.elements.downloadAppLogBtn.addEventListener('click', () => this.downloadAppLog());
+                this.elements.clearAppLogBtn.addEventListener('click', () => this.clearAppLog());
+            }
+            
+            async openFolderBrowser() {
+                this.addAppLog('info', 'Folder picker invoked', {
+                    secureContext: window.isSecureContext,
+                    hasModernPicker: 'showDirectoryPicker' in window,
+                    protocol: location.protocol
+                });
+                console.log('Opening folder browser');
+
+                try {
+                    // Treat file: protocol as unsupported for modern picker (Chrome may expose API but fail)
+                    if (location.protocol === 'file:') {
+                        this.addAppLog('warn', 'Running over file: protocol; using legacy picker');
+                        this.addLogEntry('ℹ️ Running from file://. Using legacy mode for folder access…', 'info');
+                        this.useLegacyFolderPicker('file: protocol');
+                        return;
+                    }
+
+                    // If not a secure context, modern picker will fail—fallback immediately
+                    if (!window.isSecureContext) {
+                        this.addAppLog('warn', 'Modern picker requires secure context, falling back to legacy');
+                        this.addLogEntry('ℹ️ Modern picker requires a secure context (https or localhost). Switching to legacy mode…', 'info');
+                        this.useLegacyFolderPicker('Modern picker requires secure context');
+                        return;
+                    }
+
+                    if ('showDirectoryPicker' in window) {
+                        this.addAppLog('debug', 'Attempting showDirectoryPicker');
+                        this.directoryHandle = await window.showDirectoryPicker({ mode: 'read' });
+                        const folderName = this.directoryHandle.name;
+                        this.addAppLog('info', 'Modern picker returned directory handle', { folderName });
+
+                        // If somehow a root drive is chosen (rare in modern picker), switch to legacy
+                        if (/^[A-Z]:$/i.test(folderName)) {
+                            this.addAppLog('info', 'Root folder detected in modern picker; falling back to legacy', { folderName });
+                            this.addLogEntry(`ℹ️ Root folder detected (${folderName}). Switching to legacy mode for full access…`, 'info');
+                            this.useLegacyFolderPicker('Root folder chosen');
+                            return;
+                        }
+
+                        this.elements.selectedFolder.textContent = `✅ Folder "${folderName}" selected (modern mode)`;
+                        this.elements.selectedFolder.style.display = 'block';
+                        this.elements.selectedFolder.style.background = '#e6fffa';
+                        this.elements.selectedFolder.style.color = '#234e52';
+                        this.elements.selectedFolder.style.borderLeft = '4px solid #38b2ac';
+
+                        this.legacyFileList = null;
+                        this.addLogEntry(`📁 Modern folder "${folderName}" selected`, 'info');
+                        this.updateScanButtonState();
+                    } else {
+                        this.addAppLog('warn', 'Modern picker not available; using legacy');
+                        this.addLogEntry('ℹ️ Modern picker not available. Switching to legacy mode…', 'info');
+                        this.useLegacyFolderPicker('Modern picker not available');
+                    }
+                } catch (error) {
+                    // Some environments report AbortError even when access is blocked or unsupported
+                    const errName = error?.name || 'Error';
+                    const errMsg = error?.message || String(error);
+                    this.addAppLog('error', 'Modern picker failed; switching to legacy', { errName, errMsg });
+                    console.warn('Modern picker error:', error);
+                    this.addLogEntry(`⚠️ Modern picker failed (${errName}): ${errMsg}. Switching to legacy mode…`, 'error');
+                    // Call legacy picker immediately to preserve user activation
+                    this.useLegacyFolderPicker(`Modern picker failed: ${errName}`);
+                }
+            }
+            
+            useLegacyFolderPicker(reason) {
+                if (this.isLegacyPickerOpen) {
+                    this.addAppLog('warn', 'Legacy picker already open; ignoring duplicate call', { reason });
+                    return;
+                }
+                this.isLegacyPickerOpen = true;
+                console.log('Using legacy folder picker for root drive compatibility');
+                if (reason) {
+                    this.addLogEntry(`📁 Using legacy mode (${reason}) - supports root drives but may load many files`, 'info');
+                } else {
+                    this.addLogEntry('📁 Using legacy mode - supports root drives but may load many files', 'info');
+                }
+                this.addAppLog('info', 'Opening legacy picker', { reason });
+                
+                const tempInput = document.createElement('input');
+                tempInput.type = 'file';
+                tempInput.webkitdirectory = true;
+                tempInput.multiple = true;
+                tempInput.style.display = 'none';
+                // Hint: legacy selection of very large roots may take time
+                this.elements.selectedFolder.style.display = 'block';
+                this.elements.selectedFolder.style.background = '#fff3cd';
+                this.elements.selectedFolder.style.color = '#856404';
+                this.elements.selectedFolder.style.borderLeft = '4px solid #ffc107';
+                this.elements.selectedFolder.textContent = '⏳ Waiting for folder selection (legacy)… very large folders may take time to index.';
+                
+                tempInput.addEventListener('change', (e) => {
+                    const count = e.target.files.length;
+                    this.addAppLog('debug', 'Legacy picker change event', { fileCount: count });
+                    if (count > 0) {
+                        const firstFile = e.target.files[0];
+                        let folderPath = firstFile.webkitRelativePath || '';
+                        // Try to infer top-level folder/drive label
+                        let displayName = '';
+                        if (folderPath) {
+                            const firstSegment = folderPath.split('/')[0];
+                            displayName = firstSegment || '';
+                        }
+                        if (!displayName) {
+                            const samplePath = Array.from(e.target.files).map(f => f.webkitRelativePath).find(p => p && p.includes('/'));
+                            if (samplePath) {
+                                displayName = samplePath.split('/')[0];
+                            }
+                        }
+                        if (!displayName) {
+                            displayName = 'Selected folder';
+                        }
+
+                        // Store file list for legacy scanning
+                        this.legacyFileList = e.target.files;
+                        this.directoryHandle = null; // Clear modern handle
+
+                        this.elements.selectedFolder.textContent = `✅ Folder "${displayName}" loaded (${count.toLocaleString()} files) - legacy mode`;
+                        
+                        this.addLogEntry(`📁 Legacy folder loaded: ${displayName} with ${count.toLocaleString()} files`, 'info');
+                        if (/^[A-Z]:$/i.test(displayName)) {
+                            this.addAppLog('info', 'Probable root drive detected in legacy selection', { drive: displayName, fileCount: count });
+                        }
+                        const sample = Array.from(this.legacyFileList).slice(0, 3).map(f => f.webkitRelativePath || f.name);
+                        this.addAppLog('debug', 'Legacy loaded sample paths', { sample });
+
+                        this.updateScanButtonState();
+                    } else {
+                        this.addLogEntry('ℹ️ Legacy picker closed without selection', 'info');
+                        this.addAppLog('info', 'Legacy picker closed without selection');
+                        // Reset placeholder
+                        this.elements.selectedFolder.textContent = '';
+                        this.elements.selectedFolder.style.display = 'none';
+                    }
+                    
+                    document.body.removeChild(tempInput);
+                    this.isLegacyPickerOpen = false;
+                });
+                
+                document.body.appendChild(tempInput);
+                try {
+                    if (typeof tempInput.showPicker === 'function') {
+                        this.addAppLog('debug', 'Using showPicker() for legacy input');
+                        tempInput.showPicker();
+                    } else {
+                        this.addAppLog('debug', 'Using click() for legacy input');
+                        tempInput.click();
+                    }
+                } catch (err) {
+                    this.addAppLog('error', 'Opening legacy picker failed (possible user activation issue)', { message: err?.message });
+                    this.addLogEntry('❌ Failed to open legacy picker. Please click the button again.', 'error');
+                    // Cleanup on failure
+                    document.body.removeChild(tempInput);
+                    this.isLegacyPickerOpen = false;
+                }
+            }
+            
+            handleFileTypeChange() {
+                const selectedFileType = this.elements.fileTypeSelect.value;
+                
+                if (selectedFileType === 'UFD') {
+                    this.elements.ufdControls.style.display = 'block';
+                    this.elements.zipControls.style.display = 'none';
+                } else if (selectedFileType === 'ZIP') {
+                    this.elements.ufdControls.style.display = 'none';
+                    this.elements.zipControls.style.display = 'block';
+                } else {
+                    this.elements.ufdControls.style.display = 'none';
+                    this.elements.zipControls.style.display = 'none';
+                }
+                
+                this.updateScanButtonState();
+            }
+            
+            updateScanButtonState() {
+                const hasFolder = this.directoryHandle !== null || this.legacyFileList !== null;
+                const hasFileType = this.elements.fileTypeSelect.value !== '';
+                if (this.isScanning) {
+                    // While scanning, keep button enabled to allow Stop
+                    this.elements.scanBtn.disabled = false;
+                    this.elements.scanBtn.textContent = '⏹️ Stop Scan';
+                    this.elements.scanBtn.classList.add('btn-stop');
+                } else {
+                    this.elements.scanBtn.disabled = !(hasFolder && hasFileType);
+                    this.elements.scanBtn.textContent = '🚀 Start Scan';
+                    this.elements.scanBtn.classList.remove('btn-stop');
+                }
+            }
+            
+            async startScan() {
+                if (!this.directoryHandle && !this.legacyFileList) {
+                    alert('Please select a folder first');
+                    return;
+                }
+                
+                const fileType = this.elements.fileTypeSelect.value;
+                if (!fileType) {
+                    alert('Please select a file type');
+                    return;
+                }
+                
+                this.isScanning = true;
+                this.shouldStop = false;
+                this.results = [];
+                this.updateScanButtonState();
+                this.addAppLog('info', 'Scan started', {
+                    mode: this.directoryHandle ? 'modern' : 'legacy',
+                    fileType
+                });
+                
+                this.showScanOverlay();
+                
+                this.addLogEntry(`🚀 Starting ${this.directoryHandle ? 'memory-efficient' : 'legacy'} scan for ${fileType} files...`, 'info');
+                
+                try {
+                    if (this.directoryHandle) {
+                        await this.scanWithModernAPI(fileType);
+                    } else if (this.legacyFileList) {
+                        await this.scanWithLegacyAPI(fileType);
+                    }
+                    
+                } catch (error) {
+                    console.error('Scan error:', error);
+                    this.addLogEntry(`❌ Scan error: ${error.message}`, 'error');
+                    this.addAppLog('error', 'Scan error', { message: error.message, stack: error.stack });
+                } finally {
+                    this.isScanning = false;
+                    this.updateScanButtonState();
+                    this.hideScanOverlay();
+                    // Enable download if any results exist
+                    this.elements.downloadBtn.disabled = this.results.length === 0;
+                }
+            }
+            
+            async scanWithModernAPI(fileType) {
+                const fileExtension = fileType === 'UFD' ? '.ufd' : '.zip';
+                let filesProcessed = 0;
+                let matchCount = 0;
+                const startTime = Date.now();
+                this.addAppLog('debug', 'Modern scan started', { fileExtension });
+                
+                await this.scanDirectory(this.directoryHandle, fileExtension, (file, isMatch) => {
+                    filesProcessed++;
+                    if (isMatch) matchCount++;
+                    this.updateScanOverlayStats(filesProcessed, matchCount, file.name, startTime);
+                });
+                
+                const elapsedMs = Date.now() - startTime;
+                this.addAppLog('info', 'Modern scan completed', { filesProcessed, matchCount, elapsedMs });
+                this.addLogEntry(`✅ Modern scan completed! Processed ${filesProcessed} ${fileType} files, found ${matchCount} matches.`, 'match');
+                // Enable download if results exist
+                this.elements.downloadBtn.disabled = this.results.length === 0;
+            }
+            
+            async scanWithLegacyAPI(fileType) {
+                const fileExtension = fileType === 'UFD' ? '.ufd' : '.zip';
+                this.addAppLog('debug', 'Legacy scan prepare', { fileExtension, totalFiles: this.legacyFileList ? this.legacyFileList.length : 0 });
+                
+                // Defer filtering until scan time (no processing at selection)
+                const relevantFiles = Array.from(this.legacyFileList).filter(file => 
+                    file.name.toLowerCase().endsWith(fileExtension)
+                );
+                
+                this.addAppLog('info', 'Legacy scan filtered files', { relevantCount: relevantFiles.length });
+                
+                if (relevantFiles.length === 0) {
+                    this.addLogEntry(`❌ No ${fileType} files found in the selected folder.`, 'error');
+                    return;
+                }
+                
+                this.addLogEntry(`📊 Found ${relevantFiles.length} ${fileType} files to process...`, 'info');
+                
+                let filesProcessed = 0;
+                let matchCount = 0;
+                const startTime = Date.now();
+                
+                for (const file of relevantFiles) {
+                    if (this.shouldStop) break;
+                    
+                    filesProcessed++;
+                    this.updateScanOverlayStats(filesProcessed, matchCount, file.name, startTime, relevantFiles.length);
+                    
+                    try {
+                        let isMatch = false;
+                        if (fileType === 'UFD') {
+                            isMatch = await this.processUFDFile(file);
+                        } else if (fileType === 'ZIP') {
+                            isMatch = await this.processZIPFile(file);
+                        }
+                        if (isMatch) matchCount++;
+                    } catch (error) {
+                        console.error(`Error processing ${file.name}:`, error);
+                        this.addAppLog('warn', 'File processing error (legacy)', { file: file.name, message: error.message });
+                    }
+                    
+                    if (filesProcessed % 10 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 1));
+                    }
+                }
+                
+                const elapsedMs = Date.now() - startTime;
+                this.addAppLog('info', 'Legacy scan completed', { filesProcessed, matchCount, elapsedMs });
+                this.addLogEntry(`✅ Legacy scan completed! Processed ${filesProcessed} ${fileType} files, found ${matchCount} matches.`, 'match');
+                this.elements.downloadBtn.disabled = this.results.length === 0;
+            }
+            
+            async scanDirectory(dirHandle, fileExtension, callback) {
+                for await (const entry of dirHandle.values()) {
+                    if (this.shouldStop) break;
+                    
+                    if (entry.kind === 'file' && entry.name.toLowerCase().endsWith(fileExtension)) {
+                        const file = await entry.getFile();
+                        
+                        // Process the file based on type
+                        let isMatch = false;
+                        try {
+                            if (fileExtension === '.ufd') {
+                                isMatch = await this.processUFDFile(file);
+                            } else if (fileExtension === '.zip') {
+                                isMatch = await this.processZIPFile(file);
+                            }
+                        } catch (error) {
+                            console.error(`Error processing ${file.name}:`, error);
+                        }
+                        
+                        callback(file, isMatch);
+                        
+                    } else if (entry.kind === 'directory') {
+                        // Recursively scan subdirectories
+                        await this.scanDirectory(entry, fileExtension, callback);
+                    }
+                }
+            }
+            
+            async processUFDFile(file) {
+                const fileName = file.name.toLowerCase();
+                const status = this.elements.statusSelect.value;
+                if (status === '*.*' || fileName.includes(status.toLowerCase())) {
+                    this.results.push({ file: file.name, type: 'UFD', match: true });
+                    // Enable download on first match
+                    if (this.results.length === 1) this.elements.downloadBtn.disabled = false;
+                    return true;
+                }
+                return false;
+            }
+            
+            async processZIPFile(file) {
+                const sizeUnit = this.elements.fileSizeUnitSelect.value;
+                const threshold = parseInt(this.elements.sizeThresholdSelect.value);
+                let fileSizeInUnit;
+                switch (sizeUnit) {
+                    case 'KB': fileSizeInUnit = file.size / 1024; break;
+                    case 'MB': fileSizeInUnit = file.size / (1024 * 1024); break;
+                    case 'GB': fileSizeInUnit = file.size / (1024 * 1024 * 1024); break;
+                    default: fileSizeInUnit = file.size / (1024 * 1024);
+                }
+                if (fileSizeInUnit > threshold) {
+                    this.results.push({ file: file.name, type: 'ZIP', size: `${fileSizeInUnit.toFixed(2)} ${sizeUnit}`, match: true });
+                    if (this.results.length === 1) this.elements.downloadBtn.disabled = false;
+                    return true;
+                }
+                return false;
+            }
+            
+            stopScan() {
+                this.shouldStop = true;
+                this.addLogEntry('🛑 Scan stopping…', 'info');
+                this.addAppLog('info', 'Stop requested by user');
+                // UI remains in Stop state until scan loop exits and finally resets
+            }
+            
+            showScanOverlay() {
+                this.elements.scanOverlay.style.display = 'flex';
+                // Reset stats
+                this.elements.filesProcessedCount.textContent = '0';
+                this.elements.matchesCount.textContent = '0';
+                this.elements.currentFileName.textContent = 'Initializing...';
+                this.elements.etaTime.textContent = 'Calculating...';
+                this.elements.progressFillLive.style.width = '0%';
+            }
+            
+            hideScanOverlay() {
+                this.elements.scanOverlay.style.display = 'none';
+            }
+            
+            updateScanOverlayStats(filesProcessed, matchCount, currentFileName, startTime, totalFiles = null) {
+                this.elements.filesProcessedCount.textContent = filesProcessed.toString();
+                this.elements.matchesCount.textContent = matchCount.toString();
+                this.elements.currentFileName.textContent = currentFileName;
+                
+                if (totalFiles) {
+                    // Legacy mode with known total
+                    const progress = Math.round((filesProcessed / totalFiles) * 100);
+                    this.elements.progressFillLive.style.width = `${progress}%`;
+                    
+                    // Calculate ETA
+                    const elapsed = Date.now() - startTime;
+                    const rate = filesProcessed / (elapsed / 1000);
+                    const remaining = totalFiles - filesProcessed;
+                    const eta = Math.round(remaining / rate);
+                    this.elements.etaTime.textContent = eta > 0 && isFinite(eta) ? `${eta} seconds` : 'Almost done...';
+                } else {
+                    // Modern mode - indeterminate progress
+                    const progress = Math.min(filesProcessed * 2, 100); // Simple animation
+                    this.elements.progressFillLive.style.width = `${progress}%`;
+                    this.elements.etaTime.textContent = 'Processing...';
+                }
+            }
+            
+            addLogEntry(message, type = 'info') {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry log-${type}`;
+                logEntry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+                
+                this.elements.resultsLog.appendChild(logEntry);
+                this.elements.resultsLog.scrollTop = this.elements.resultsLog.scrollHeight;
+            }
+
+            // --- App Log utilities ---
+            addAppLog(level, message, meta) {
+                const ts = new Date();
+                const entry = { ts: ts.toISOString(), level, message, meta };
+                this.appLogEntries.push(entry);
+                if (this.appLogEntries.length > this.maxAppLogEntries) {
+                    this.appLogEntries.shift();
+                }
+                const line = document.createElement('div');
+                const time = ts.toLocaleTimeString();
+                const includeMeta = level !== 'info' || this.elements.debugMode.checked;
+                const metaStr = meta && includeMeta ? ` | ${JSON.stringify(meta)}` : '';
+                line.className = `log-entry log-${level === 'error' ? 'error' : level === 'warn' ? 'info' : 'info'}`;
+                line.textContent = `${time} [${level.toUpperCase()}] - ${message}${metaStr || ''}`;
+                this.elements.appLog.appendChild(line);
+                this.elements.appLog.scrollTop = this.elements.appLog.scrollHeight;
+            }
+
+            downloadAppLog() {
+                const text = this.appLogEntries.map(e => `${e.ts} [${e.level.toUpperCase()}] ${e.message}${e.meta ? ' | ' + JSON.stringify(e.meta) : ''}`).join('\n');
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'app_log.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            copyAppLog() {
+                const text = this.appLogEntries.map(e => `${e.ts} [${e.level.toUpperCase()}] ${e.message}${e.meta ? ' | ' + JSON.stringify(e.meta) : ''}`).join('\n');
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        this.addAppLog('info', 'App log copied to clipboard');
+                    }).catch(() => {
+                        this.addAppLog('error', 'Failed to copy app log');
+                    });
+                } else {
+                    // Fallback
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); this.addAppLog('info', 'App log copied to clipboard'); } catch { this.addAppLog('error', 'Failed to copy app log'); }
+                    document.body.removeChild(ta);
+                }
+            }
+
+            clearAppLog() {
+                this.appLogEntries = [];
+                this.elements.appLog.innerHTML = '';
+                this.addAppLog('info', 'App log cleared');
+            }
+
+            logEnvironmentSnapshot() {
+                const snapshot = {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language,
+                    secureContext: window.isSecureContext,
+                    protocol: location.protocol,
+                    hasModernPicker: 'showDirectoryPicker' in window
+                };
+                this.addAppLog('info', 'Environment snapshot', snapshot);
+            }
+        }
+        
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDarkModePreference();
+            window.scanner = new UFDScanner();
+        });
+    </script>
+</body>
+</html>
